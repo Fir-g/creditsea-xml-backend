@@ -9,7 +9,6 @@ This project is an API for processing and managing credit reports. It allows use
 - [API Endpoints](#api-endpoints)
 - [Project Structure](#project-structure)
 - [Environment Variables](#environment-variables)
-- [License](#license)
 
 ## Installation
 
@@ -64,9 +63,59 @@ To use the API, you need to send HTTP requests to the endpoints described below.
 - **Description:** Fetch a single credit report by its ID.
 - **Response:**
     - A credit report object.
+API Endpoints
+
+Method
+
+Endpoint
+
+Description
+
+POST
+
+/upload
+
+Uploads a credit report file
+
+GET
+
+/reports
+
+Retrieves all credit reports
+
+GET
+
+/reports/:id
+
+Retrieves a specific report
 
 ## Project Structure
-.env .env_example .gitignore index.js models/ CreditReport.js package.json src/ app.js config/ database.js multer.js controllers/ creditReportController.js dao/ creditReportDao.js models/ CreditReport.js routes/ creditReportRoutes.js services/ creditReportService.js utils/ errorHandler.js xmlParser.js uploads/
+.env
+.env_example
+.gitignore
+index.js
+models/
+  ├── CreditReport.js
+package.json
+src/
+  ├── app.js
+  ├── config/
+  │   ├── database.js
+  │   ├── multer.js
+  ├── controllers/
+  │   ├── creditReportController.js
+  ├── dao/
+  │   ├── creditReportDao.js
+  ├── models/
+  │   ├── CreditReport.js
+  ├── routes/
+  │   ├── creditReportRoutes.js
+  ├── services/
+  │   ├── creditReportService.js
+  ├── utils/
+  │   ├── errorHandler.js
+  │   ├── xmlParser.js
+uploads/
 
 ## Environment Variables
 
@@ -75,6 +124,4 @@ The following environment variables need to be set in the [.env](http://_vscodec
 - [PORT](): The port on which the server will run (default: 3000).
 - [MONGO_URI]:): The URI for connecting to the MongoDB database.
 
-## License
 
-This project is licensed under the MIT License.
