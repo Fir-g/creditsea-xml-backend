@@ -90,7 +90,7 @@ GET
 Retrieves a specific report
 
 ## Project Structure
-.env
+```.env
 .env_example
 .gitignore
 index.js
@@ -115,8 +115,7 @@ src/
   ├── utils/
   │   ├── errorHandler.js
   │   ├── xmlParser.js
-uploads/
-
+uploads/ ```
 ## Environment Variables
 
 The following environment variables need to be set in the [.env](http://_vscodecontentref_/5) file:
