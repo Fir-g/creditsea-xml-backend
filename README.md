@@ -96,7 +96,8 @@ src/
   ├── utils/
   │   ├── errorHandler.js
   │   ├── xmlParser.js
-uploads/ ```
+uploads/
+```
 ## Environment Variables
 
 The following environment variables need to be set in the [.env] file:
@@ -104,4 +105,7 @@ The following environment variables need to be set in the [.env] file:
 - [PORT](): The port on which the server will run (default: 3000).
 - [MONGO_URI]:): The URI for connecting to the MongoDB database.
 
+### Important
 
+For the frontend application and live demo, follow here:
+[CreditSea XML Frontend](https://github.com/Fir-g/creditsea-xml-frontend)
