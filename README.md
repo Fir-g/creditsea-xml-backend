@@ -14,8 +14,7 @@ This project is an API for processing and managing credit reports. It allows use
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/credit-report-api.git
-    cd credit-report-api
+    git clone https://github.com/Fir-g/creditsea-xml-backend.git
     ```
 
 2. Install dependencies:
