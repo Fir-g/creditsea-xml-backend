@@ -62,32 +62,13 @@ To use the API, you need to send HTTP requests to the endpoints described below.
 - **Method:** `GET`
 - **Description:** Fetch a single credit report by its ID.
 - **Response:**
-    - A credit report object.
-API Endpoints
+    - A credit report object
 
-Method
-
-Endpoint
-
-Description
-
-POST
-
-/upload
-
-Uploads a credit report file
-
-GET
-
-/reports
-
-Retrieves all credit reports
-
-GET
-
-/reports/:id
-
-Retrieves a specific report
+| Endpoint | Description | Method |
+|----------|-------------|---------|
+| `/upload` | Uploads a credit report file | POST |
+| `/reports` | Retrieves all credit reports | GET |
+| `/reports/:id` | Retrieves a specific report | GET |
 
 ## Project Structure
 ```.env
@@ -118,7 +99,7 @@ src/
 uploads/ ```
 ## Environment Variables
 
-The following environment variables need to be set in the [.env](http://_vscodecontentref_/5) file:
+The following environment variables need to be set in the [.env] file:
 
 - [PORT](): The port on which the server will run (default: 3000).
 - [MONGO_URI]:): The URI for connecting to the MongoDB database.
