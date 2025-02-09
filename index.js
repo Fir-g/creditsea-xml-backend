@@ -1,3 +1,4 @@
+
 import express from 'express';
 import mongoose from 'mongoose';
 import multer from 'multer';
@@ -9,7 +10,7 @@ import fs from 'fs';
 import CreditReport from './models/CreditReport.js';
 import dotenv from 'dotenv';
 
-dotenv.config(); // Load variables from .env
+dotenv.config(); // Load environment variables
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,7 +21,7 @@ const upload = multer({ dest: 'uploads/' });
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB using the URI from the .env file
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -28,54 +29,59 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-// mongoose.connect(
-//   'mongodb+srv://doctoraraham:9svPlbh0wn7LhHQT@cluster0.jrum0.mongodb.net/yourDatabaseName?retryWrites=true&w=majority',
-//   { useNewUrlParser: true, useUnifiedTopology: true }
-// )
-//   .then(() => console.log('Connected to MongoDB'))
-//   .catch(err => console.error('MongoDB connection error:', err));
-
-
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-  
+    // Read and parse the XML file
     const xmlData = await fs.promises.readFile(req.file.path, 'utf-8');
-
-
     const parser = new xml2js.Parser({ explicitArray: false });
     const result = await parser.parseStringPromise(xmlData);
 
-  
     console.log('Parsed XML:', JSON.stringify(result, null, 2));
 
- 
+    // Root node check
     const root = result.INProfileResponse;
     if (!root) {
       throw new Error('Invalid XML format: missing <INProfileResponse> root element.');
     }
 
-   
     const applicant = root.Current_Application?.Current_Application_Details?.Current_Applicant_Details;
-  
     const score = root.SCORE;
-   
     const caisSummary = root.CAIS_Account?.CAIS_Summary;
     const creditAccountSummary = caisSummary?.Credit_Account;
     const totalOutstanding = caisSummary?.Total_Outstanding_Balance;
-   
     const accountDetails = root.CAIS_Account?.CAIS_Account_DETAILS;
 
-  
+    // Extract PAN card details
+    const panSet = new Set();
+
+    if (accountDetails) {
+      const accountArray = Array.isArray(accountDetails) ? accountDetails : [accountDetails];
+
+      accountArray.forEach(acc => {
+        if (acc.CAIS_Holder_ID_Details) {
+          const idDetails = Array.isArray(acc.CAIS_Holder_ID_Details) ? acc.CAIS_Holder_ID_Details : [acc.CAIS_Holder_ID_Details];
+          idDetails.forEach(id => {
+            if (id.Income_TAX_PAN) {
+              panSet.add(id.Income_TAX_PAN);
+            }
+          });
+        }
+      });
+    }
+    const panNumbers = [...panSet].join(', ') || 'N/A';
+
+    
+
+    // Construct the credit report object
     const creditData = {
       basicDetails: {
-      
         name: applicant ? `${applicant.First_Name || ''} ${applicant.Last_Name || ''}`.trim() : '',
         mobilePhone: applicant?.MobilePhoneNumber || '',
-        pan: applicant?.IncomeTaxPan || '',
+        pan: panNumbers, // Now prints only **once**
         creditScore: score ? parseInt(score.BureauScore, 10) : 0
       },
       reportSummary: {
@@ -90,34 +96,47 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       creditAccounts: []
     };
 
-   
+    // Extract credit accounts
     if (accountDetails) {
-      if (Array.isArray(accountDetails)) {
-        creditData.creditAccounts = accountDetails.map(acc => ({
+      const accountArray = Array.isArray(accountDetails) ? accountDetails : [accountDetails];
+
+      creditData.creditAccounts = accountArray.map(acc => {
+        // Extract address details
+        let address = '';
+        if (acc.CAIS_Holder_Address_Details) {
+          const addressDetails = Array.isArray(acc.CAIS_Holder_Address_Details)
+            ? acc.CAIS_Holder_Address_Details[0]
+            : acc.CAIS_Holder_Address_Details;
+
+          address = [
+            addressDetails.First_Line_Of_Address_non_normalized,
+            addressDetails.Second_Line_Of_Address_non_normalized,
+            addressDetails.Third_Line_Of_Address_non_normalized,
+            addressDetails.City_non_normalized,
+            addressDetails.State_non_normalized,
+            addressDetails.ZIP_Postal_Code_non_normalized
+          ]
+            .filter(Boolean) // Remove empty values
+            .join(', ');
+        }
+
+        return {
           type: acc.Account_Type || '',
           bank: acc.Subscriber_Name || '',
           accountNumber: acc.Account_Number || '',
-          address: '', 
+          address, // ✅ Correct Address Extracted
           amountOverdue: parseFloat(acc.Amount_Past_Due || '0'),
           currentBalance: parseFloat(acc.Current_Balance || '0')
-        }));
-      } else {
-        
-        creditData.creditAccounts.push({
-          type: accountDetails.Account_Type || '',
-          bank: accountDetails.Subscriber_Name || '',
-          accountNumber: accountDetails.Account_Number || '',
-          address: '',
-          amountOverdue: parseFloat(accountDetails.Amount_Past_Due || '0'),
-          currentBalance: parseFloat(accountDetails.Current_Balance || '0')
-        });
-      }
+        };
+      });
     }
 
-  
+
+    // Save to database
     const creditReport = new CreditReport(creditData);
     await creditReport.save();
 
+    // Delete uploaded file after processing
     await fs.promises.unlink(req.file.path);
 
     res.json({ message: 'Report processed successfully', id: creditReport._id });
@@ -127,7 +146,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-
+// Fetch all reports
 app.get('/api/reports', async (req, res) => {
   try {
     const reports = await CreditReport.find().sort({ createdAt: -1 });
@@ -137,7 +156,7 @@ app.get('/api/reports', async (req, res) => {
   }
 });
 
-
+// Fetch a single report by ID
 app.get('/api/reports/:id', async (req, res) => {
   try {
     const report = await CreditReport.findById(req.params.id);
@@ -150,6 +169,7 @@ app.get('/api/reports/:id', async (req, res) => {
   }
 });
 
+// Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
